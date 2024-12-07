@@ -1,0 +1,296 @@
+# ----------------------------------------------------------------------- #
+# Combined Docker Compose for Microservices + Kafka + Keycloak
+#
+# Commands:
+# 1. docker network create gp69               # (Only if network doesn't exist)
+# 2. docker compose -p assignment up -d --build --no-cache
+#    (This builds and starts all services)
+# 3. docker compose -p assignment down
+# ----------------------------------------------------------------------- #
+
+services:
+  # ---------------------- KAFKA & ZOOKEEPER -----------------------
+  zookeeper:
+    container_name: zookeeper
+    hostname: zookeeper
+    image: confluentinc/cp-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - gp69
+
+  broker:
+    container_name: broker
+    image: confluentinc/cp-kafka:7.5.0
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://host.docker.internal:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - gp69
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui
+    ports:
+      - "8088:8080"
+    environment:
+      KAFKA_CLUSTER_NAME: local
+      KAFKA_CLUSTER_BOOTSTRAPERSERVERS: broker:29092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    depends_on:
+      - broker
+    networks:
+      - gp69
+
+  # ---------------------- MICROSERVICES & DBS ---------------------
+  gp69-booking-service:
+    image: gp69-booking-service
+    build:
+      context: ./BookingService
+      dockerfile: ./Dockerfile
+    container_name: Gp69BookingService
+    ports:
+      - "8069:8069"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # If needed, set Kafka bootstrap servers:
+      # SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+    restart: unless-stopped
+    depends_on:
+      - gp69-mongodb-booking
+      - gp69-room-service
+    networks:
+      - gp69
+
+  gp69-event-service:
+    image: gp69-event-service
+    build:
+      context: ./EventService
+      dockerfile: ./Dockerfile
+    container_name: Gp69EventService
+    ports:
+      - "8169:8169"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+    restart: unless-stopped
+    depends_on:
+      - gp69-mongodb-event
+      - gp69-booking-service
+    networks:
+      - gp69
+
+  gp69-approval-service:
+    image: gp69-approval-service
+    build:
+      context: ./ApprovalService
+      dockerfile: ./Dockerfile
+    container_name: Gp69ApprovalService
+    ports:
+      - "8269:8269"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+    restart: unless-stopped
+    depends_on:
+      - gp69-event-service
+      - gp69-booking-service
+      - gp69-mongodb-approval
+    networks:
+      - gp69
+
+  gp69-room-service:
+    image: gp69-room-service
+    build:
+      context: ./room-service
+      dockerfile: ./Dockerfile
+    container_name: Gp69RoomService
+    ports:
+      - "8369:8369"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092 (if needed)
+    restart: unless-stopped
+    depends_on:
+      - gp69-postgres-room
+    networks:
+      - gp69
+
+  gp69-user-service:
+    image: gp69-user-service
+    build:
+      context: ./user-service
+      dockerfile: ./Dockerfile
+    container_name: Gp69UserService
+    ports:
+      - "8469:8469"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092 (if needed)
+    restart: unless-stopped
+    depends_on:
+      - gp69-postgres-room
+    networks:
+      - gp69
+
+  gp69-mongodb-booking:
+    image: mongo:latest
+    ports:
+      - "27069:27069"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./data/mongo/booking:/data/db
+    restart: unless-stopped
+    command: ["mongod", "--port", "27069"]
+    networks:
+      - gp69
+
+  gp69-mongodb-event:
+    image: mongo:latest
+    ports:
+      - "27169:27169"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./data/mongo/event:/data/db
+    restart: unless-stopped
+    command: ["mongod", "--port", "27169"]
+    networks:
+      - gp69
+
+  gp69-mongodb-approval:
+    image: mongo:latest
+    ports:
+      - "27269:27269"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./data/mongo/approval:/data/db
+    restart: unless-stopped
+    command: ["mongod", "--port", "27269"]
+    networks:
+      - gp69
+
+  gp69-postgres-room:
+    image: postgres:latest
+    container_name: postgres-room
+    ports:
+      - "5369:5369"
+    environment:
+      PGPORT: 5369
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./data/postgres/room:/var/lib/postgresql/data
+      - ./init/room/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - gp69
+
+  gp69-postgres-user:
+    image: postgres:latest
+    container_name: postgres-user
+    environment:
+      PGPORT: 5469
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./data/postgres/user:/var/lib/postgresql/data
+      - ./init/user/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5469:5469"
+    networks:
+      - gp69
+
+  api-gateway:
+    image: api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: ./Dockerfile
+    container_name: api-gateway
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092 (if needed)
+    depends_on:
+      - gp69-approval-service
+      - gp69-booking-service
+      - gp69-event-service
+      - gp69-room-service
+      - gp69-user-service
+    networks:
+      - gp69
+
+  keycloak:
+    container_name: keycloak
+    hostname: keycloak
+    image: quay.io/keycloak/keycloak:24.0.1
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres-keycloak
+      DB_DATABASE: keycloak
+      DB_USER: admin
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
+      ROOT_LOGLEVEL: DEBUG
+      JBOSS_LOG_MANAGER_ROOT_LOGGER: DEBUG, stdout, FILE
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./realms/:/opt/keycloak/data/import
+    depends_on:
+      - gp69-postgres-keycloak
+    networks:
+      - gp69
+
+  gp69-postgres-keycloak:
+    image: postgres
+    container_name: postgres-keycloak
+    ports:
+      - "5485:5485"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./data/postgres/keycloak:/var/lib/postgresql/data
+    networks:
+      - gp69
+
+volumes:
+  gp69-mongodb-booking:
+    driver: local
+  gp69-mongodb-event:
+    driver: local
+  gp69-mongodb-approval:
+    driver: local
+  gp69-postgres-room:
+    driver: local
+  gp69-postgres-user:
+    driver: local
+  keycloak:
+    driver: local
+  postgres-keycloak:
+    driver: local
+
+networks:
+  gp69:
+    external: true

@@ -1,0 +1,53 @@
+
+services:
+  # Zookeeper service to co-ordinate and manage Kafka brothers (cluster)
+  zookeeper:
+    container_name: zookeeper
+    hostname: zookeeper
+    image: confluentinc/cp-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - gp69
+
+  # kafka Broker
+  broker:
+    container_name: broker
+    image: confluentinc/cp-kafka:7.5.0
+    ports:
+      # External Connections (outside Docker)
+      - "9092:9092"
+      # Internal connections (within Docker)
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://host.docker.internal:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - gp69
+
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui
+    ports:
+      - "8088:8080"
+    environment:
+      KAFKA_CLUSTER_NAME: local
+      KAFKA_CLUSTER_BOOTSTRAPERSERVERS: broker:29092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    depends_on:
+      - broker
+    networks:
+      - gp69
+
+networks:
+  gp69:
+    external: true
