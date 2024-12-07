@@ -53,15 +53,15 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> bookingServiceRoute() {
         return GatewayRouterFunctions.route("booking_service")
-                .route(RequestPredicates.path("/api/booking"), request -> {
+                .route(RequestPredicates.path("/api/booking/**"), request -> {
                     log.info("Received request for booking service {}", request.uri());
                     return HandlerFunctions.http(bookingServiceUrl).handle(request);
-
                 })
                 .filter(CircuitBreakerFilterFunctions
                         .circuitBreaker("bookingServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
+
     @Bean
     public RouterFunction<ServerResponse> eventServiceRoute() {
         return GatewayRouterFunctions.route("event_service")
