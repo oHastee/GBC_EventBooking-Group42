@@ -77,7 +77,7 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> roomServiceRoute() {
         return GatewayRouterFunctions.route("room_service")
-                .route(RequestPredicates.path("/api/room"), request -> {
+                .route(RequestPredicates.path("/api/room/**"), request -> {
                     log.info("Received request for room service {}", request.uri());
                     return HandlerFunctions.http(roomServiceUrl).handle(request);
 
@@ -89,15 +89,16 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> userServiceRoute() {
         return GatewayRouterFunctions.route("user_service")
-                .route(RequestPredicates.path("/api/users"), request -> {
+                .route(RequestPredicates.path("/api/users/**"), request -> {
                     log.info("Received request for user service {}", request.uri());
                     return HandlerFunctions.http(userServiceUrl).handle(request);
-
                 })
+
                 .filter(CircuitBreakerFilterFunctions
                         .circuitBreaker("userServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
+
 
     @Bean
     public RouterFunction<ServerResponse> approvalServiceSwagger() {
