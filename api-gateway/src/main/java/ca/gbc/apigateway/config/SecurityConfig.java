@@ -20,7 +20,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-resource/**",
             "/api-docs/**",
-            "/aggregate/**"
+            "/aggregate/**",
+            "/fallback"
     };
 
     @Bean

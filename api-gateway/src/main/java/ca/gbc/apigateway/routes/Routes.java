@@ -20,8 +20,12 @@ import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouter
 @Configuration
 @Slf4j
 public class Routes {
-    @Value("${services.approval.url}")
-    private String approvalServiceUrl;
+
+    @Value("${services.user.url}")
+    private String userServiceUrl;
+
+    @Value("${services.room.url}")
+    private String roomServiceUrl;
 
     @Value("${services.booking.url}")
     private String bookingServiceUrl;
@@ -29,63 +33,10 @@ public class Routes {
     @Value("${services.event.url}")
     private String eventServiceUrl;
 
-    @Value("${services.room.url}")
-    private String roomServiceUrl;
+    @Value("${services.approval.url}")
+    private String approvalServiceUrl;
 
-    @Value("${services.user.url}")
-    private String userServiceUrl;
-
-    @Bean
-    public RouterFunction<ServerResponse> approvalServiceRoute() {
-        return GatewayRouterFunctions.route("approval_service")
-                .route(RequestPredicates.path("/api/approval"), request -> {
-                    log.info("Received request for approval service {}", request.uri());
-                    return HandlerFunctions.http(approvalServiceUrl).handle(request);
-
-                })
-                .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("approvalServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
-                .build();
-    }
-
-
-
-    @Bean
-    public RouterFunction<ServerResponse> bookingServiceRoute() {
-        return GatewayRouterFunctions.route("booking_service")
-                .route(RequestPredicates.path("/api/booking"), request -> {
-                    log.info("Received request for booking service {}", request.uri());
-                    return HandlerFunctions.http(bookingServiceUrl).handle(request);
-
-                })
-                .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("bookingServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
-                .build();
-    }
-    @Bean
-    public RouterFunction<ServerResponse> eventServiceRoute() {
-        return GatewayRouterFunctions.route("event_service")
-                .route(RequestPredicates.path("/api/event"), request -> {
-                    log.info("Received request for event service {}", request.uri());
-                    return HandlerFunctions.http(eventServiceUrl).handle(request);
-
-                })
-                .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("eventServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
-                .build();
-    }
-    @Bean
-    public RouterFunction<ServerResponse> roomServiceRoute() {
-        return GatewayRouterFunctions.route("room_service")
-                .route(RequestPredicates.path("/api/room"), request -> {
-                    log.info("Received request for room service {}", request.uri());
-                    return HandlerFunctions.http(roomServiceUrl).handle(request);
-
-                })
-                .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("roomServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
-                .build();
-    }
+    // User Service Route
     @Bean
     public RouterFunction<ServerResponse> userServiceRoute() {
         return GatewayRouterFunctions.route("user_service")
@@ -99,46 +50,63 @@ public class Routes {
                 .build();
     }
 
+    // Room Service Route
     @Bean
-    public RouterFunction<ServerResponse> approvalServiceSwagger() {
-        return GatewayRouterFunctions.route("approval_service_swagger")
-                .route(RequestPredicates.path("/aggregate/approval_service/api-docs"),
-                        HandlerFunctions.http(approvalServiceUrl))
-                .filter(setPath("/api-docs"))
+    public RouterFunction<ServerResponse> roomServiceRoute() {
+        return GatewayRouterFunctions.route("room_service")
+                .route(RequestPredicates.path("/api/room"), request -> {
+                    log.info("Received request for room service {}", request.uri());
+                    return HandlerFunctions.http(roomServiceUrl).handle(request);
+
+                })
                 .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("ApprovalSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                        .circuitBreaker("roomServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
+
+    // Booking Service Route
     @Bean
-    public RouterFunction<ServerResponse> bookingServiceSwagger() {
-        return GatewayRouterFunctions.route("booking_service_swagger")
-                .route(RequestPredicates.path("/aggregate/booking_service/api-docs"),
-                        HandlerFunctions.http(bookingServiceUrl))
-                .filter(setPath("/api-docs"))
+    public RouterFunction<ServerResponse> bookingServiceRoute() {
+        return GatewayRouterFunctions.route("booking_service")
+                .route(RequestPredicates.path("/api/booking"), request -> {
+                    log.info("Received request for booking service {}", request.uri());
+                    return HandlerFunctions.http(bookingServiceUrl).handle(request);
+
+                })
                 .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("BookingSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                        .circuitBreaker("bookingServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
+
+    // Event Service Route
     @Bean
-    public RouterFunction<ServerResponse> eventServiceSwagger() {
-        return GatewayRouterFunctions.route("event_service_swagger")
-                .route(RequestPredicates.path("/aggregate/event_service/api-docs"),
-                        HandlerFunctions.http(eventServiceUrl))
-                .filter(setPath("/api-docs"))
+    public RouterFunction<ServerResponse> eventServiceRoute() {
+        return GatewayRouterFunctions.route("event_service")
+                .route(RequestPredicates.path("/api/event"), request -> {
+                    log.info("Received request for event service {}", request.uri());
+                    return HandlerFunctions.http(eventServiceUrl).handle(request);
+
+                })
                 .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("BookingSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                        .circuitBreaker("eventServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
+
+    // Approval Service Route
     @Bean
-    public RouterFunction<ServerResponse> roomServiceSwagger() {
-        return GatewayRouterFunctions.route("room_service_swagger")
-                .route(RequestPredicates.path("/aggregate/room_service/api-docs"),
-                        HandlerFunctions.http(roomServiceUrl))
-                .filter(setPath("/api-docs"))
+    public RouterFunction<ServerResponse> approvalServiceRoute() {
+        return GatewayRouterFunctions.route("approval_service")
+                .route(RequestPredicates.path("/api/approval"), request -> {
+                    log.info("Received request for approval service {}", request.uri());
+                    return HandlerFunctions.http(approvalServiceUrl).handle(request);
+
+                })
                 .filter(CircuitBreakerFilterFunctions
-                        .circuitBreaker("RoomSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                        .circuitBreaker("approvalServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
+
+    // Swagger Aggregation Routes
     @Bean
     public RouterFunction<ServerResponse> userServiceSwagger() {
         return GatewayRouterFunctions.route("user_service_swagger")
@@ -150,6 +118,51 @@ public class Routes {
                 .build();
     }
 
+    @Bean
+    public RouterFunction<ServerResponse> roomServiceSwagger() {
+        return GatewayRouterFunctions.route("room_service_swagger")
+                .route(RequestPredicates.path("/aggregate/room_service/api-docs"),
+                        HandlerFunctions.http(roomServiceUrl))
+                .filter(setPath("/api-docs"))
+                .filter(CircuitBreakerFilterFunctions
+                        .circuitBreaker("RoomSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> bookingServiceSwagger() {
+        return GatewayRouterFunctions.route("booking_service_swagger")
+                .route(RequestPredicates.path("/aggregate/booking_service/api-docs"),
+                        HandlerFunctions.http(bookingServiceUrl))
+                .filter(setPath("/api-docs"))
+                .filter(CircuitBreakerFilterFunctions
+                        .circuitBreaker("BookingSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> eventServiceSwagger() {
+        return GatewayRouterFunctions.route("event_service_swagger")
+                .route(RequestPredicates.path("/aggregate/event_service/api-docs"),
+                        HandlerFunctions.http(eventServiceUrl))
+                .filter(setPath("/api-docs"))
+                .filter(CircuitBreakerFilterFunctions
+                        .circuitBreaker("BookingSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> approvalServiceSwagger() {
+        return GatewayRouterFunctions.route("approval_service_swagger")
+                .route(RequestPredicates.path("/aggregate/approval_service/api-docs"),
+                        HandlerFunctions.http(approvalServiceUrl))
+                .filter(setPath("/api-docs"))
+                .filter(CircuitBreakerFilterFunctions
+                        .circuitBreaker("ApprovalSwaggerCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    // Fallback Route
     @Bean
     public RouterFunction<ServerResponse> fallbackRoute(){
 

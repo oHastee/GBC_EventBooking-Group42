@@ -26,7 +26,7 @@ ENV POSTGRES_DB=user-service \
     POSTGRES_PASSWORD=password
 
 # Expose the application port
-EXPOSE 8088
+EXPOSE 8089
 
 # Start the application
 ENTRYPOINT ["java", "-jar", "/app/user-service.jar"]
