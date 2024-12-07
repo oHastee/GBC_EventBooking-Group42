@@ -38,7 +38,7 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> approvalServiceRoute() {
         return GatewayRouterFunctions.route("approval_service")
-                .route(RequestPredicates.path("/api/approval"), request -> {
+                .route(RequestPredicates.path("/api/approval/**"), request -> {
                     log.info("Received request for approval service {}", request.uri());
                     return HandlerFunctions.http(approvalServiceUrl).handle(request);
 
@@ -65,7 +65,7 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> eventServiceRoute() {
         return GatewayRouterFunctions.route("event_service")
-                .route(RequestPredicates.path("/api/event"), request -> {
+                .route(RequestPredicates.path("/api/event/**"), request -> {
                     log.info("Received request for event service {}", request.uri());
                     return HandlerFunctions.http(eventServiceUrl).handle(request);
 
