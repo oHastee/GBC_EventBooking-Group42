@@ -245,7 +245,7 @@ services:
 
   postgres-keycloak-gbc:
     container_name: postgres-keycloak-gbc
-    image: postgres:15-alpine
+    image: postgres:latest
     ports:
       - "5438:5438"
     environment:
@@ -289,7 +289,7 @@ volumes:
     driver: local
   postgres-room:
     driver: local
-  postgres:user:
+  postgres-user:
     driver: local
   keycloak-gbc:
     driver: local

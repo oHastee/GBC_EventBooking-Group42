@@ -11,7 +11,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - gp69
+      - spring
 
   # kafka Broker
   broker:
@@ -31,7 +31,7 @@ services:
     depends_on:
       - zookeeper
     networks:
-      - gp69
+      - spring
 
 
   kafka-ui:
@@ -46,8 +46,8 @@ services:
     depends_on:
       - broker
     networks:
-      - gp69
+      - spring
 
 networks:
-  gp69:
-    external: true
+  spring:
+    driver: bridge

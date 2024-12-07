@@ -1,3 +1,3 @@
 rootProject.name = "microservice-parent"
 
-include("BookingService", "EventService", "ApprovalService", "room-service", "user-service", "api-gateway")
+include("booking-service", "event-service", "approval-service", "room-service", "user-service", "api-gateway")
